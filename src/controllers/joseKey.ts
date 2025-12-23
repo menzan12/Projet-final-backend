@@ -1,4 +1,8 @@
-// Assure-toi que JOSE_SECRET dans .env est une chaîne de 32 caractères minimum
-export const JoseSecretkey = new TextEncoder().encode(
-    process.env.JWT_SECRET || "une_cle_secrete_de_secours_de_32_chars"
-);
+import { createHash } from "crypto";
+
+// Cette méthode transforme n'importe quelle chaîne en une clé de 256 bits (32 octets)
+const secret = process.env.JWT_SECRET || "une_cle_par_defaut_tres_longue_et_securisee";
+
+export const JoseSecretkey = createHash("sha256")
+  .update(secret)
+  .digest();
