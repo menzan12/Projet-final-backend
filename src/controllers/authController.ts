@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/UserModel";
-import { SendEmail } from "./SendEmail"; 
-import bcrypt from "bcryptjs";
+import { SendEmail } from "./sendEmail"; 
+import bcrypt from "bcrypt";
 
 export const register = async (req: Request, res: Response) => {
     try {

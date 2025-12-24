@@ -1,22 +1,21 @@
-import nodemailer from "nodemailer";
-
-export const SendEmail = async (
-    sujet: string,
-    message: string,
-    email: string,
-    url?: string | null
-) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SendEmail = void 0;
+const nodemailer_1 = __importDefault(require("nodemailer"));
+const SendEmail = async (sujet, message, email, url) => {
     try {
-        const transporter = nodemailer.createTransport({
+        const transporter = nodemailer_1.default.createTransport({
             host: "smtp.gmail.com",
             port: 587,
-secure: false,
+            secure: false,
             auth: {
                 user: process.env.EMAIL_SENDER,
                 pass: process.env.PASSWORD_SENDER,
             },
         });
-
         await transporter.sendMail({
             from: `"Support App" <${process.env.email_sender}>`,
             to: email,
@@ -31,10 +30,11 @@ secure: false,
                     </a>
                 </div>` : `<p>${message}</p>`,
         });
-        
         console.log("Email envoyé avec succès à :", email);
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Erreur Nodemailer :", error);
         throw new Error("Impossible d'envoyer l'email.");
     }
 };
+exports.SendEmail = SendEmail;

@@ -1,14 +1,14 @@
-import { Document, Schema } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export type ServiceStatus = "pending" | "approved" | "rejected";
 
-export interface IService extends Document {   
+export interface IService extends Document {
     title: string;
     description: string;
     price: number;
     category: string;
+    vendor: Types.ObjectId; 
     status: ServiceStatus;
-    vendor: Schema.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }

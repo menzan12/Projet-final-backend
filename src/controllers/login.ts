@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/UserModel";
 import bcrypt from "bcrypt";
 import * as jose from "jose";
-import { JoseSecretkey } from "./Josekey";
+import { JoseSecretkey } from "../utils/joseKey";
 
 export const login = async (req: Request, res: Response) => {
     try {
@@ -24,7 +24,7 @@ export const login = async (req: Request, res: Response) => {
 
         // Création Token JWE (Chiffré) avec Jose
         const token = await new jose.EncryptJWT({ 
-            uid: user._id, 
+            uid: user._id.toString(), 
             role: user.role,
             email: user.email 
         })
