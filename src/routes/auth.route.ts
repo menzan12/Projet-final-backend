@@ -1,7 +1,7 @@
 import express from "express";
 import { register } from "../controllers/authController";
 import { login } from "../controllers/login";
-import User from "../models/UserModel";
+import User from "../models/User.model";
 
 const router = express.Router();
 

@@ -8,32 +8,29 @@ import { CreateServiceRequestBody, UpdateServiceRequestBody } from "../types";
  */
 export const createService = async (req: Request, res: Response) => {
   try {
-    const { title, description, price, category }: CreateServiceRequestBody = req.body;
     const user = (req as any).user;
 
-    // Sécurité supplémentaire : On vérifie si l'ID est valide avant de l'utiliser
-    if (!user.uid || user.uid === "[object Object]") {
-        return res.status(401).json({ message: "Session invalide. Veuillez vous reconnecter." });
+    // 🔐 Restriction de rôle
+    if (user.role !== "vendor" && user.role !== "admin") {
+      return res.status(403).json({ 
+        message: "Accès refusé. Seuls les vendeurs peuvent créer des services." 
+      });
     }
 
-    const serviceData = {
+    const { title, description, price, category } = req.body;
+    
+    const service = await Service.create({
       title,
       description,
       price: Number(price),
       category,
-      vendor: new Types.ObjectId(user.uid), // Ici, user.uid sera une string hexadécimale propre
+      vendor: new Types.ObjectId(user.uid),
       status: "pending"
-    };
+    } as any);
 
-    const service = await Service.create(serviceData as any);
     res.status(201).json(service);
-
   } catch (error: any) {
-    console.error("Erreur terminal :", error);
-    res.status(500).json({ 
-        message: "Erreur lors de la création du service",
-        details: error.message 
-    });
+    res.status(500).json({ message: "Erreur lors de la création." });
   }
 };
 

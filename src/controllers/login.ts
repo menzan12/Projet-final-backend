@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import User from "../models/UserModel";
+import User from "../models/User.model";
 import bcrypt from "bcrypt";
 import * as jose from "jose";
 import { JoseSecretkey } from "../utils/joseKey";
@@ -38,7 +38,7 @@ export const login = async (req: Request, res: Response) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 2 * 60 * 60 * 1000 // 2 heures en ms
+            maxAge: 24 * 60 * 60 * 1000 // 24 heures en ms
         });
 
         return res.status(200).json({ message: "Connecté", role: user.role });

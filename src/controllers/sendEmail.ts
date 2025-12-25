@@ -18,7 +18,7 @@ secure: false,
         });
 
         await transporter.sendMail({
-            from: `"Support App" <${process.env.email_sender}>`,
+            from: `"Support App" <${process.env.EMAIL_SENDER}>`,
             to: email,
             subject: sujet,
             text: message,
