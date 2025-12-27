@@ -3,22 +3,18 @@ import * as jose from "jose";
 import { JoseSecretkey } from "../utils/joseKey"; // Chemin à adapter
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies.token; // ou via headers
+
+  if (!token) return res.status(401).json({ message: "Non connecté" });
+
   try {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ message: "Token manquant" });
-
-    // jose accepte directement le Buffer retourné par le hash sha256
     const { payload } = await jose.jwtDecrypt(token, JoseSecretkey);
-
-    (req as any).user = {
-      uid: String(payload.uid),
-      role: payload.role,
-      email: payload.email
-    };
-
+    (req as any).user = payload;
     next();
-  } catch (error) {
-    console.error("Erreur Auth Middleware:", error);
-    return res.status(401).json({ message: "Session invalide" });
+  } catch (error: any) {
+    if (error.code === 'ERR_JWT_EXPIRED') {
+      return res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
+    }
+    return res.status(401).json({ message: "Jeton invalide" });
   }
 };

@@ -48,3 +48,24 @@ export const login = async (req: Request, res: Response) => {
         return res.status(500).json({ message: "Erreur serveur" });
     }
 };
+
+// Récupérer les infos de l'utilisateur connecté
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user; // Injecté par le middleware 'protect'
+    
+    if (!user) {
+      return res.status(401).json({ message: "Non autorisé" });
+    }
+
+    // On renvoie les infos de base (on ne renvoie JAMAIS le mot de passe)
+    return res.status(200).json({
+      id: user.uid,
+      role: user.role,
+      email: user.email,
+      name: user.name // Assure-toi que ton middleware 'protect' extrait bien le nom si besoin
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

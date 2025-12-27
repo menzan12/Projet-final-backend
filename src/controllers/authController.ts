@@ -37,3 +37,18 @@ export const register = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Erreur serveur." });
     }
 };
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ message: "Non autorisé" });
+
+    res.json({
+      id: user.uid,
+      role: user.role,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
