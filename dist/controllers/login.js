@@ -36,15 +36,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = void 0;
-const UserModel_1 = __importDefault(require("../models/UserModel"));
+exports.getMe = exports.login = void 0;
+const User_model_1 = __importDefault(require("../models/User.model"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jose = __importStar(require("jose"));
 const joseKey_1 = require("../utils/joseKey");
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await UserModel_1.default.findOne({ email });
+        const user = await User_model_1.default.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: "Identifiants invalides." });
         }
@@ -70,7 +70,7 @@ const login = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 2 * 60 * 60 * 1000 // 2 heures en ms
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 jours en ms
         });
         return res.status(200).json({ message: "Connecté", role: user.role });
     }
@@ -80,3 +80,23 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+// Récupérer les infos de l'utilisateur connecté
+const getMe = async (req, res) => {
+    try {
+        const user = req.user; // Injecté par le middleware 'protect'
+        if (!user) {
+            return res.status(401).json({ message: "Non autorisé" });
+        }
+        // On renvoie les infos de base (on ne renvoie JAMAIS le mot de passe)
+        return res.status(200).json({
+            id: user.uid,
+            role: user.role,
+            email: user.email,
+            name: user.name // Assure-toi que ton middleware 'protect' extrait bien le nom si besoin
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+};
+exports.getMe = getMe;

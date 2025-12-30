@@ -33,23 +33,16 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.protect = void 0;
-const jose = __importStar(require("jose"));
-const joseKey_1 = require("../utils/joseKey"); // Chemin à adapter
-const protect = async (req, res, next) => {
-    const token = req.cookies.token; // ou via headers
-    if (!token)
-        return res.status(401).json({ message: "Non connecté" });
-    try {
-        const { payload } = await jose.jwtDecrypt(token, joseKey_1.JoseSecretkey);
-        req.user = payload;
-        next();
-    }
-    catch (error) {
-        if (error.code === 'ERR_JWT_EXPIRED') {
-            return res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
-        }
-        return res.status(401).json({ message: "Jeton invalide" });
-    }
-};
-exports.protect = protect;
+const mongoose_1 = __importStar(require("mongoose"));
+const IAConversationSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    question: { type: String, required: true },
+    answer: { type: String, required: true }
+}, { timestamps: true });
+exports.default = mongoose_1.default.model("IAConversation", IAConversationSchema);
+const ChatSchema = new mongoose_1.default.Schema({
+    userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: false },
+    userMessage: String,
+    aiResponse: String,
+    createdAt: { type: Date, default: Date.now } // C'est cette clé qui servira au nettoyage
+});

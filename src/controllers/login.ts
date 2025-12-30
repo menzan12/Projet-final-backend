@@ -38,7 +38,7 @@ export const login = async (req: Request, res: Response) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 24 * 60 * 60 * 1000 // 24 heures en ms
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 jours en ms
         });
 
         return res.status(200).json({ message: "Connecté", role: user.role });

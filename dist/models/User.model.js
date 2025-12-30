@@ -33,23 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.protect = void 0;
-const jose = __importStar(require("jose"));
-const joseKey_1 = require("../utils/joseKey"); // Chemin à adapter
-const protect = async (req, res, next) => {
-    const token = req.cookies.token; // ou via headers
-    if (!token)
-        return res.status(401).json({ message: "Non connecté" });
-    try {
-        const { payload } = await jose.jwtDecrypt(token, joseKey_1.JoseSecretkey);
-        req.user = payload;
-        next();
-    }
-    catch (error) {
-        if (error.code === 'ERR_JWT_EXPIRED') {
-            return res.status(401).json({ message: "Session expirée, veuillez vous reconnecter" });
-        }
-        return res.status(401).json({ message: "Jeton invalide" });
-    }
-};
-exports.protect = protect;
+const mongoose_1 = __importStar(require("mongoose"));
+const UserSchema = new mongoose_1.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ["client", "vendor", "admin"], default: "client" },
+    isEmailVerify: { type: Boolean, default: false }
+}, { timestamps: true });
+exports.default = mongoose_1.default.model("User", UserSchema);

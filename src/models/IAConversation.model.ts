@@ -20,3 +20,10 @@ export default mongoose.model<IIAConversation>(
   "IAConversation",
   IAConversationSchema
 );
+
+const ChatSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  userMessage: String,
+  aiResponse: String,
+  createdAt: { type: Date, default: Date.now } // C'est cette clé qui servira au nettoyage
+});

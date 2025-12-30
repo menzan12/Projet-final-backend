@@ -17,3 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./user.types"), exports);
 __exportStar(require("./service.types"), exports);
 __exportStar(require("./booking.types"), exports);
+__exportStar(require("./message.types"), exports);

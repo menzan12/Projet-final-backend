@@ -3,52 +3,104 @@ import User from "../models/User.model";
 import { SendEmail } from "./sendEmail"; 
 import bcrypt from "bcrypt";
 
+/**
+ * Inscription d'un nouvel utilisateur
+ */
 export const register = async (req: Request, res: Response) => {
     try {
-        const { name, email, password } = req.body;
+        // 1. Extraction dynamique du rôle depuis le corps de la requête
+        const { name, email, password, role } = req.body;
+
+        // Validation des champs obligatoires
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Veuillez remplir tous les champs." });
         }
 
+        // Vérification de l'existence de l'utilisateur
         const userExists = await User.findOne({ email: email.toLowerCase() });
         if (userExists) {
             return res.status(400).json({ message: "Cet utilisateur existe déjà." });
         }
 
+        // Sécurité : Empêcher l'inscription directe en tant qu'admin via le client
+        // Si quelqu'un tente de s'inscrire en tant qu'admin, on le force en "client"
+        let finalRole = role || "client";
+        if (finalRole === "admin") {
+            finalRole = "client"; 
+        }
+
+        // Hachage du mot de passe
         const hashedPassword = await bcrypt.hash(password, 12);
+
+        // 2. Création de l'utilisateur avec le rôle dynamique (client ou vendor)
         const newUser = new User({
             name,
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: "client"
+            role: finalRole // Utilise la valeur nettoyée
         });
 
         const savedUser = await newUser.save();
+
+        // Préparation de l'URL de vérification
         const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/api/auth/verify-email/${savedUser._id}`;
         
-        await SendEmail("Validation du compte", "Bienvenue ! Validez votre email.", savedUser.email, verifyUrl);
+        // Envoi de l'email de bienvenue
+        try {
+            await SendEmail("Validation du compte", "Bienvenue ! Validez votre email.", savedUser.email, verifyUrl);
+        } catch (emailError) {
+            console.error("Erreur envoi email:", emailError);
+            // On ne bloque pas la réponse si l'email échoue, l'utilisateur est quand même créé
+        }
 
+        // 3. Réponse avec le rôle inclus pour confirmation dans Postman
         return res.status(201).json({
             message: "Utilisateur créé avec succès. Email envoyé.",
-            user: { id: savedUser._id, name: savedUser.name, email: savedUser.email }
+            user: { 
+                id: savedUser._id, 
+                name: savedUser.name, 
+                email: savedUser.email,
+                role: savedUser.role // Très important pour ton test
+            }
         });
+
     } catch (error: any) {
-        if (error.code === 11000) return res.status(400).json({ message: "Email déjà utilisé." });
-        res.status(500).json({ message: "Erreur serveur." });
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Email déjà utilisé." });
+        }
+        console.error("Erreur Register:", error);
+        res.status(500).json({ message: "Erreur serveur lors de l'inscription." });
     }
 };
 
+/**
+ * Récupérer les informations de l'utilisateur connecté
+ */
 export const getMe = async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-    if (!user) return res.status(401).json({ message: "Non autorisé" });
+    try {
+        // On récupère l'utilisateur injecté par le middleware d'authentification
+        const authUser = (req as any).user;
 
-    res.json({
-      id: user.uid,
-      role: user.role,
-      email: user.email,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
+        if (!authUser) {
+            return res.status(401).json({ message: "Non autorisé" });
+        }
+
+        // On cherche les infos complètes en base
+        const user = await User.findById(authUser.id || authUser.uid).select("-password");
+
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur introuvable" });
+        }
+
+        res.json({
+            id: user._id,
+            name: user.name,
+            role: user.role,
+            email: user.email,
+        });
+
+    } catch (error) {
+        console.error("Erreur GetMe:", error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
 };
