@@ -4,6 +4,6 @@ import { protect } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-router.post("/ask",  ChatBotAI);
+router.post("/ask",   ChatBotAI);
 
 export default router;

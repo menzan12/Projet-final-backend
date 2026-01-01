@@ -5,6 +5,7 @@ import Service from "../models/Service.model";
 import { CreateBookingRequestBody } from "../types";
 
 export const createBooking = async (req: Request, res: Response) => {
+
   try {
     const { serviceId, bookingDate, notes }: CreateBookingRequestBody = req.body;
     const user = (req as any).user;

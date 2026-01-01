@@ -1,5 +1,5 @@
 import express from "express";
-import { register } from "../controllers/authController";
+import { logout, register } from "../controllers/authController";
 import { login } from "../controllers/login";
 import User from "../models/User.model";
 import { getMe } from "../controllers/authController";
@@ -13,8 +13,9 @@ router.post("/register", register);
 
 // Connexion
 router.post("/login", login);
-
 router.get("/me", protect, getMe);
+//Déconnexion
+router.post("/logout", logout);
 
 // Vérification d'email (Route appelée quand on clique dans l'email)
 router.get("/verify-email/:id", async (req, res) => {
