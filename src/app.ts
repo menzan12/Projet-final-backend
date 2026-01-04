@@ -1,9 +1,10 @@
+import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import cors from "cors";
 import cookieParser from "cookie-parser"; 
 import connectDB from "./db/connexion-db";
 import authRoutes from "./routes/auth.route";
+import statsRoutes from "./routes/stats.routes";
 import serviceRoutes from "./routes/service.route";
 import bookingRoutes from "./routes/booking.route";
 import messageRoutes from "./routes/message.route";
@@ -30,6 +31,7 @@ app.use(cookieParser()); // Indispensable pour lire le token dans les cookies
 app.use("/api/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/stats", statsRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/ai", iaRoutes);
 
@@ -47,3 +49,5 @@ cron.schedule("0 0 1 * *", async () => {
   await IAConversationModel.deleteMany({ createdAt: { $lt: oneMonthAgo } });
   console.log("[Auto-Cleanup] Messages de plus d'un mois supprimés.");
 });
+
+
