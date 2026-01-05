@@ -1,20 +1,14 @@
-import mongoose, { Schema } from "mongoose";
-import { IService } from "../types";
+import { Schema, model } from "mongoose";
 
-const ServiceSchema: Schema<IService> = new Schema(
-  {
-    title: { type: String, required: true, trim: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true, min: 0 },
-    category: { type: String, required: true },
-    vendor: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    status: { 
-      type: String, 
-      enum: ["pending", "approved", "rejected"], 
-      default: "pending" 
-    },
-  },
-  { timestamps: true }
-);
+const serviceSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  price: { type: Number, required: true },
+  category: { type: String, required: true },
+  city: { type: String, required: true },      
+  provider: { type: String, required: true },  
+  vendor: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" }
+}, { timestamps: true });
 
-export default mongoose.model<IService>("Service", ServiceSchema);
+export default model("Service", serviceSchema);

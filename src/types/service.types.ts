@@ -7,6 +7,8 @@ export interface IService extends Document {
     description: string;
     price: number;
     category: string;
+    city: string;     
+  provider: string;
     vendor: Types.ObjectId; 
     status: ServiceStatus;
     createdAt: Date;
@@ -29,6 +31,8 @@ export interface CreateServiceRequestBody {
   description: string;
   price: number;
   category: string;
+  city: string;    
+  provider: string;
 }
 
 export interface UpdateServiceRequestBody {

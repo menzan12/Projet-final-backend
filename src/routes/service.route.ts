@@ -5,7 +5,8 @@ import {
     deleteService, 
     getAllServices, 
     getActiveCategories,
-    getServiceById
+    getServiceById,
+    getVendorServices
 } from "../controllers/serviceController";
 import { protect } from "../middlewares/authMiddleware";
 
@@ -14,6 +15,7 @@ const router = express.Router();
 // Public : Voir les services approuvés
 router.get("/", getAllServices);
 router.get("/categories", getActiveCategories)
+router.get("/vendor", protect, getVendorServices);
 router.get("/:id", getServiceById);
 
 // Protégé : Créer, Modifier, Supprimer (Nécessite d'être connecté)

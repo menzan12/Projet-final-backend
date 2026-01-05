@@ -13,6 +13,7 @@ router.use(protect); // Toutes les routes ci-dessous nécessitent d'être connec
 
 router.post("/", createBooking);
 router.get("/my", getMyBookings);
+router.get("/vendor", getMyBookings);
 router.patch("/cancel/:id", cancelBooking);
 router.patch("/status/:id", updateBookingStatus);
 
