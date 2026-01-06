@@ -3,27 +3,16 @@ import { Document, Types } from "mongoose";
 export type ServiceStatus = "pending" | "approved" | "rejected";
 
 export interface IService extends Document {
-    title: string;
-    description: string;
-    price: number;
-    category: string;
-    city: string;     
-  provider: string;
-    vendor: Types.ObjectId; 
-    status: ServiceStatus;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface ServiceResponse {
-  id: string;
   title: string;
   description: string;
   price: number;
   category: string;
-  vendor: { id: string; name: string };
+  city: string;
+  images: string[]; 
+  vendor: Types.ObjectId; 
   status: ServiceStatus;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateServiceRequestBody {
@@ -31,14 +20,6 @@ export interface CreateServiceRequestBody {
   description: string;
   price: number;
   category: string;
-  city: string;    
-  provider: string;
-}
-
-export interface UpdateServiceRequestBody {
-    title?: string;
-    description?: string;
-    price?: number;
-    category?: string;
-    status?: ServiceStatus;
+  city: string;
+  images: string[]; 
 }

@@ -49,5 +49,3 @@ cron.schedule("0 0 1 * *", async () => {
   await IAConversationModel.deleteMany({ createdAt: { $lt: oneMonthAgo } });
   console.log("[Auto-Cleanup] Messages de plus d'un mois supprimés.");
 });
-
-

@@ -1,20 +1,17 @@
 import express from "express";
-import { 
-    createBooking, 
-    getMyBookings, 
-    cancelBooking, 
-    updateBookingStatus 
-} from "../controllers/bookingController";
 import { protect } from "../middlewares/authMiddleware";
+import { 
+  createBooking, 
+  getMyBookings, 
+  cancelBooking, 
+  updateBookingStatus 
+} from "../controllers/bookingController";
 
 const router = express.Router();
 
-router.use(protect); // Toutes les routes ci-dessous nécessitent d'être connecté
-
-router.post("/", createBooking);
-router.get("/my", getMyBookings);
-router.get("/vendor", getMyBookings);
-router.patch("/cancel/:id", cancelBooking);
-router.patch("/status/:id", updateBookingStatus);
+router.post("/", protect, createBooking);
+router.get("/my", protect, getMyBookings);
+router.patch("/cancel/:id", protect, cancelBooking);
+router.patch("/status/:id", protect, updateBookingStatus);
 
 export default router;
