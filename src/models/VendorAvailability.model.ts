@@ -4,8 +4,8 @@ const VendorAvailabilitySchema = new Schema(
   {
     vendor: { type: Schema.Types.ObjectId, ref: "User", required: true },
     date: { type: Date, required: true },
-    startTime: { type: String, required: true }, // "09:00"
-    endTime: { type: String, required: true },   // "10:00"
+    startTime: { type: String, required: true }, 
+    endTime: { type: String, required: true },   
     isBooked: { type: Boolean, default: false }
   },
   { timestamps: true }

@@ -8,13 +8,19 @@ import statsRoutes from "./routes/stats.routes";
 import serviceRoutes from "./routes/service.route";
 import bookingRoutes from "./routes/booking.route";
 import messageRoutes from "./routes/message.route";
+import imageRoute from "./routes/image.route"; // Assure-toi que le fichier image.route.ts a un "export default router"
 import iaRoutes from "./routes/ia.route";
+import adminRoutes from "./routes/admin.route";
 import IAConversationModel from "./models/IAConversation.model";
 import cron from "node-cron";
 
 dotenv.config();
+
+// Vérification des variables d'environnement critiques
 console.log("Clé Gemini chargée :", !!process.env.GEMINI_API_KEY);
 console.log("Clé OpenAI chargée :", !!process.env.OPENAI_API_KEY);
+
+// Connexion à la base de données
 connectDB();
 
 const app = express();
@@ -24,6 +30,7 @@ app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:5173", 
   credentials: true 
 })); 
+
 app.use(express.json());
 app.use(cookieParser()); // Indispensable pour lire le token dans les cookies
 
@@ -33,8 +40,11 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/image", imageRoute); // Route pour ImageKit (/api/image/auth)
 app.use("/api/ai", iaRoutes);
+app.use("/api/admin", adminRoutes);
 
+// Middleware 404 pour les routes non définies
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} introuvable.` });
 });
@@ -42,10 +52,14 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Serveur lancé sur : http://localhost:${PORT}`));
 
-
+// Tâche planifiée : Nettoyage mensuel des conversations IA
 cron.schedule("0 0 1 * *", async () => {
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  await IAConversationModel.deleteMany({ createdAt: { $lt: oneMonthAgo } });
-  console.log("[Auto-Cleanup] Messages de plus d'un mois supprimés.");
+  try {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    await IAConversationModel.deleteMany({ createdAt: { $lt: oneMonthAgo } });
+    console.log("[Auto-Cleanup] Messages de plus d'un mois supprimés.");
+  } catch (error) {
+    console.error("[Auto-Cleanup] Erreur lors du nettoyage :", error);
+  }
 });

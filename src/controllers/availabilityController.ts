@@ -20,7 +20,7 @@ export const getVendorAvailability = async (req: Request, res: Response) => {
     const slots = await VendorAvailability.find({
       vendor: req.params.vendorId,
       isBooked: false,
-      date: { $gte: new Date() } // Uniquement le futur
+      date: { $gte: new Date() } 
     }).sort({ date: 1, startTime: 1 });
     res.json(slots);
   } catch (error) {
