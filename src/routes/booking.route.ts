@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", protect, createBooking);
+router.post("/create", protect, createBooking);
 router.get("/my", protect, getMyBookings);
 router.patch("/cancel/:id", protect, cancelBooking);
 router.patch("/status/:id", protect, updateBookingStatus);

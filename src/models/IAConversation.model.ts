@@ -5,25 +5,38 @@ export interface IIAConversation extends Document {
   question: string;
   answer: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const IAConversationSchema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    question: { type: String, required: true },
-    answer: { type: String, required: true }
+    // On utilise "user" pour être raccord avec ton contrôleur
+    user: { 
+      type: Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true 
+    },
+    question: { 
+      type: String, 
+      required: true 
+    },
+    answer: { 
+      type: String, 
+      required: true 
+    }
   },
-  { timestamps: true }
+  { 
+    // timestamps: true crée automatiquement 'createdAt' et 'updatedAt'
+    // C'est parfait pour ta fonction de nettoyage (cleanup)
+    timestamps: true 
+  }
 );
+
+// Indexation pour accélérer les recherches par utilisateur et le nettoyage par date
+IAConversationSchema.index({ user: 1 });
+IAConversationSchema.index({ createdAt: 1 });
 
 export default mongoose.model<IIAConversation>(
   "IAConversation",
   IAConversationSchema
 );
-
-const ChatSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
-  userMessage: String,
-  aiResponse: String,
-  createdAt: { type: Date, default: Date.now } // C'est cette clé qui servira au nettoyage
-});

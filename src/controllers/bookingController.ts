@@ -5,36 +5,47 @@ import Service from "../models/Service.model";
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { serviceId, bookingDate, notes } = req.body;
+    const { serviceId, slot, notes } = req.body;
     const userId = (req as any).user._id;
+
+    if (!slot || !slot.date || !slot.time) {
+      return res.status(400).json({ message: "Le créneau est requis" });
+    }
 
     const service = await Service.findById(serviceId);
     if (!service) return res.status(404).json({ message: "Service introuvable" });
+
+    // Construction de la date ISO (On dynamise l'année/mois si besoin)
+    const bookingDate = new Date(`2026-10-${slot.date.padStart(2, '0')}T${slot.time}:00`); 
 
     const newBooking = await Booking.create({
       service: new Types.ObjectId(serviceId),
       client: new Types.ObjectId(userId),
       vendor: service.vendor,
-      bookingDate: new Date(bookingDate),
+      bookingDate: bookingDate,
+      notes: notes || `Jour: ${slot.day}, Heure: ${slot.time}`,
       totalPrice: service.price,
-      notes: notes || "",
       status: "pending"
     });
 
     res.status(201).json(newBooking);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la réservation" });
+  } catch (error: any) {
+    res.status(500).json({ message: "Erreur lors de la création de la réservation" });
   }
 };
 
 export const getMyBookings = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const query = user.role === "vendor" ? { vendor: new Types.ObjectId(user._id) } : { client: new Types.ObjectId(user._id) };
+    const query = user.role === "vendor" 
+      ? { vendor: user._id } 
+      : { client: user._id };
 
     const bookings = await Booking.find(query)
-      .populate("service", "title price images")
-      .populate("client vendor", "name email")
+      // Ajustement : on récupère 'name' au lieu de 'title' pour matcher ton UI
+      .populate("service", "name price images") 
+      // On récupère aussi l'avatar pour l'UI de messagerie
+      .populate("client vendor", "name email avatar") 
       .sort({ createdAt: -1 });
 
     res.json(bookings);
@@ -42,7 +53,6 @@ export const getMyBookings = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erreur récupération réservations" });
   }
 };
-
 // AJOUT DE LA FONCTION MANQUANTE : cancelBooking
 export const cancelBooking = async (req: Request, res: Response) => {
   try {

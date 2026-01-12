@@ -8,7 +8,7 @@ import statsRoutes from "./routes/stats.routes";
 import serviceRoutes from "./routes/service.route";
 import bookingRoutes from "./routes/booking.route";
 import messageRoutes from "./routes/message.route";
-import imageRoute from "./routes/image.route"; // Assure-toi que le fichier image.route.ts a un "export default router"
+import imageRoute from "./routes/image.route"; 
 import iaRoutes from "./routes/ia.route";
 import adminRoutes from "./routes/admin.route";
 import IAConversationModel from "./models/IAConversation.model";
@@ -49,7 +49,7 @@ app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} introuvable.` });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`🚀 Serveur lancé sur : http://localhost:${PORT}`));
 
 // Tâche planifiée : Nettoyage mensuel des conversations IA

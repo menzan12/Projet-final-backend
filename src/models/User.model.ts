@@ -10,6 +10,11 @@ export interface IUser extends Document {
   isProfileComplete: boolean;
   isAdminApproved: boolean;
   vendorPlan: "free" | "pro" | "premium";
+  
+  // NOUVEAUX CHAMPS À AJOUTER POUR L'INTERFACE
+  upgradeRequested: boolean; 
+  requestedPlan: string;
+  
   phone?: string;
   bio?: string;
   address?: {
@@ -17,7 +22,6 @@ export interface IUser extends Document {
     city: string;
     zip: string;
   };
-  // CHAMPS AJOUTÉS POUR LE VENDEUR
   serviceMainImage?: string;
   vendorCategory?: string;
   experienceYears?: number;
@@ -44,6 +48,11 @@ const UserSchema = new Schema<IUser>(
     isProfileComplete: { type: Boolean, default: false },
     isAdminApproved: { type: Boolean, default: false },
     vendorPlan: { type: String, enum: ["free", "pro", "premium"], default: "free" },
+
+    // AJOUT DANS LE SCHEMA POUR MONGOOSE
+    upgradeRequested: { type: Boolean, default: false },
+    requestedPlan: { type: String, default: "" },
+
     phone: { type: String },
     bio: { type: String },
     address: {
@@ -51,7 +60,6 @@ const UserSchema = new Schema<IUser>(
       city: { type: String },
       zip: { type: String },
     },
-    // DÉFINITION DES NOUVEAUX CHAMPS DANS LE SCHEMA
     serviceMainImage: { type: String, default: "" },
     vendorCategory: { type: String },
     experienceYears: { type: Number },

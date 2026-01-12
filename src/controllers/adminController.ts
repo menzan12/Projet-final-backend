@@ -23,7 +23,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     }
 
     const users = await User.find(query)
-      .select("name email role createdAt city isAdminApproved vendorPlan") // Ajout de vendorPlan ici pour la liste
+      .select("name email role createdAt city isAdminApproved vendorPlan upgradeRequested requestedPlan") 
       .sort({ createdAt: -1 });
 
     res.json(users);
@@ -38,22 +38,18 @@ export const getAllUsers = async (req: Request, res: Response) => {
 export const getFullUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
-
-    // .lean() permet d'avoir un objet JS simple, plus rapide
     const user = await User.findById(userId).select("-password").lean();
+    
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
     let services: any[] = []; 
-    
     if (user.role === "vendor") {
       services = await Service.find({ vendor: userId }).sort({ createdAt: -1 });
     }
 
-    // On cherche les bookings soit où l'user est client, soit où il est vendeur
     const query = user.role === "vendor" ? { vendor: userId } : { client: userId };
-    
     const bookings = await Booking.find(query)
       .populate("service", "title") 
       .sort({ createdAt: -1 })
@@ -62,7 +58,7 @@ export const getFullUserProfile = async (req: Request, res: Response) => {
     const formattedBookings = bookings.map(b => ({
       _id: b._id,
       serviceName: (b.service as any)?.title || "Service supprimé",
-      date: (b as any).bookingDate || (b as any).date, // Sécurité sur le nom du champ date
+      date: (b as any).bookingDate || (b as any).date,
       totalPrice: b.totalPrice,
       status: b.status
     }));
@@ -80,9 +76,6 @@ export const getFullUserProfile = async (req: Request, res: Response) => {
 
 // --- GESTION DES VENDEURS (APPROBATIONS) ---
 
-/**
- * 3. Liste des vendeurs en attente de validation
- */
 export const getPendingVendors = async (req: Request, res: Response) => {
   try {
     const pending = await User.find({
@@ -90,34 +83,25 @@ export const getPendingVendors = async (req: Request, res: Response) => {
       isWaitingApproval: true,
       isAdminApproved: false
     }).select("name email vendorCategory address createdAt city documents");
-    
     res.json(pending);
   } catch (error) {
     res.status(500).json({ message: "Erreur récupération vendeurs" });
   }
 };
 
-/**
- * 4. Approuver un vendeur
- */
 export const approveVendor = async (req: Request, res: Response) => {
   try {
     const updated = await User.findByIdAndUpdate(req.params.vendorId, { 
       isAdminApproved: true,
       isWaitingApproval: false 
     }, { new: true });
-
     if (!updated) return res.status(404).json({ message: "Vendeur non trouvé" });
-    
     res.json({ message: "Vendeur approuvé avec succès" });
   } catch (error) {
     res.status(500).json({ message: "Erreur validation vendeur" });
   }
 };
 
-/**
- * 5. Refuser un vendeur (réinitialise son état pour qu'il puisse corriger)
- */
 export const rejectVendor = async (req: Request, res: Response) => {
   try {
     const updated = await User.findByIdAndUpdate(req.params.vendorId, { 
@@ -125,44 +109,68 @@ export const rejectVendor = async (req: Request, res: Response) => {
       isWaitingApproval: false,
       isProfileComplete: false 
     }, { new: true });
-
     if (!updated) return res.status(404).json({ message: "Vendeur non trouvé" });
-
-    res.json({ message: "Vendeur refusé. Le profil a été réinitialisé pour correction." });
+    res.json({ message: "Vendeur refusé. Profil réinitialisé." });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors du rejet du vendeur" });
+    res.status(500).json({ message: "Erreur lors du rejet" });
   }
 };
 
-// --- GESTION BUSINESS ---
+// --- GESTION BUSINESS (UPGRADES) ---
 
 /**
- * 6. Modifier le plan d'un vendeur
+ * 6. Modifier le plan d'un vendeur (Action Admin)
  */
 export const updateVendorPlan = async (req: Request, res: Response) => {
   try {
     const { userId, newPlan } = req.body;
 
+    // Validation des types de plans autorisés
+    const validPlans = ["free", "pro", "premium"];
+    if (!validPlans.includes(newPlan)) {
+      return res.status(400).json({ message: "Type de plan invalide" });
+    }
+
     const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user || user.role !== "vendor") {
+      return res.status(404).json({ message: "Vendeur non trouvé" });
     }
 
-    if (user.role !== "vendor") {
-      return res.status(400).json({ message: "Seuls les vendeurs possèdent un plan" });
-    }
-
-    // Mise à jour du champ vendorPlan défini dans ton modèle
     user.vendorPlan = newPlan;
+    // On réinitialise la demande d'upgrade une fois traitée
+    user.upgradeRequested = false; 
     await user.save();
 
     res.json({
-      message: `Plan de ${user.name} mis à jour : ${newPlan}`,
+      message: `Plan de ${user.name} mis à jour vers ${newPlan}`,
       vendorPlan: user.vendorPlan
     });
   } catch (error) {
-    console.error("Erreur updateVendorPlan:", error);
     res.status(500).json({ message: "Erreur lors de la mise à jour du plan" });
+  }
+};
+
+/**
+ * 7. Demander un upgrade (Action Vendeur)
+ */
+export const requestUpgrade = async (req: Request, res: Response) => {
+  try {
+    // Utilisation de l'ID depuis le middleware protect
+    const userId = (req as any).user._id; 
+    const { requestedPlan } = req.body;
+
+    if (!["pro", "premium"].includes(requestedPlan)) {
+      return res.status(400).json({ message: "Plan demandé invalide" });
+    }
+
+    await User.findByIdAndUpdate(userId, { 
+      upgradeRequested: true,
+      requestedPlan: requestedPlan 
+    });
+
+    res.status(200).json({ message: "Votre demande d'upgrade a été envoyée à l'administrateur." });
+  } catch (error) {
+    console.error("Erreur requestUpgrade:", error);
+    res.status(500).json({ message: "Erreur serveur lors de la demande d'upgrade" });
   }
 };
