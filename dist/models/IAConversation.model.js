@@ -35,14 +35,26 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const IAConversationSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
-    question: { type: String, required: true },
-    answer: { type: String, required: true }
-}, { timestamps: true });
-exports.default = mongoose_1.default.model("IAConversation", IAConversationSchema);
-const ChatSchema = new mongoose_1.default.Schema({
-    userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: false },
-    userMessage: String,
-    aiResponse: String,
-    createdAt: { type: Date, default: Date.now } // C'est cette clé qui servira au nettoyage
+    // On utilise "user" pour être raccord avec ton contrôleur
+    user: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    question: {
+        type: String,
+        required: true
+    },
+    answer: {
+        type: String,
+        required: true
+    }
+}, {
+    // timestamps: true crée automatiquement 'createdAt' et 'updatedAt'
+    // C'est parfait pour ta fonction de nettoyage (cleanup)
+    timestamps: true
 });
+// Indexation pour accélérer les recherches par utilisateur et le nettoyage par date
+IAConversationSchema.index({ user: 1 });
+IAConversationSchema.index({ createdAt: 1 });
+exports.default = mongoose_1.default.model("IAConversation", IAConversationSchema);

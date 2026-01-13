@@ -12,7 +12,9 @@ const mongoose_1 = require("mongoose");
 // --- FONCTION DE FALLBACK OPENAI ---
 async function fallBackOpenAI(prompt, res) {
     try {
-        // Initialisation LOCALE pour garantir la lecture de la clé
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error("Clé OpenAI manquante");
+        }
         const openai = new openai_1.default({
             apiKey: process.env.OPENAI_API_KEY,
         });
@@ -22,12 +24,14 @@ async function fallBackOpenAI(prompt, res) {
                 { role: "system", content: chatbotContext_1.ChatBotContext },
                 { role: "user", content: prompt }
             ],
+            max_tokens: 500,
         });
-        return res.json({ text: response.choices[0].message.content });
+        const text = response.choices[0].message.content;
+        return res.json({ text });
     }
     catch (error) {
         console.error("Erreur critique OpenAI:", error.message);
-        return res.status(500).json({ message: "IA indisponible (OpenAI Error)." });
+        return res.status(500).json({ message: "Désolé, nos services d'IA sont temporairement indisponibles." });
     }
 }
 // --- CHATBOT PRINCIPAL ---
@@ -35,50 +39,58 @@ const ChatBotAI = async (req, res) => {
     try {
         const { text } = req.body;
         const user = req.user;
-        // Diagnostic rapide dans la console
-        if (!process.env.GEMINI_API_KEY)
-            console.warn("Attention: GEMINI_API_KEY manquante");
-        const ai = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+        if (!text) {
+            return res.status(400).json({ message: "Le texte est requis." });
+        }
+        // Diagnostic API Key
+        if (!process.env.GEMINI_API_KEY) {
+            console.warn("GEMINI_API_KEY manquante, bascule immédiate sur OpenAI");
+            return await fallBackOpenAI(text, res);
+        }
+        const ai = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(`Contexte: ${chatbotContext_1.ChatBotContext}\nQuestion: ${text}`);
-        const answer = result.response.text();
-        // Sauvegarde
-        IAConversation_model_1.default.create({
-            user: new mongoose_1.Types.ObjectId(user.uid),
-            question: text,
-            answer: answer
-        }).catch(e => console.error("Erreur save DB:", e.message));
+        // Construction du prompt avec contexte
+        const prompt = `Tu es l'assistant de SkillMarket. Voici ton contexte: ${chatbotContext_1.ChatBotContext}\n\nUtilisateur: ${text}\nAssistant:`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let answer = response.text();
+        // Nettoyage rapide (enlever les balises markdown si l'IA en met)
+        answer = answer.replace(/```json|```/g, "").trim();
+        // Sauvegarde asynchrone (ne bloque pas la réponse client)
+        const userId = user.id || user._id || user.uid;
+        if (userId) {
+            IAConversation_model_1.default.create({
+                user: new mongoose_1.Types.ObjectId(userId),
+                question: text,
+                answer: answer
+            }).catch(e => console.error("Erreur save DB:", e.message));
+        }
         return res.json({ text: answer });
     }
     catch (error) {
-        console.error("Gemini a échoué, passage à OpenAI...");
-        await fallBackOpenAI(req.body.text, res);
+        console.error("Gemini Error:", error.message, "Passage à OpenAI...");
+        // Tentative de secours avec OpenAI
+        return await fallBackOpenAI(req.body.text, res);
     }
 };
 exports.ChatBotAI = ChatBotAI;
-//suppression des message coté ai
+// --- NETTOYAGE DES CONVERSATIONS ---
 const cleanupOldConversations = async (req, res) => {
     try {
-        // 1. Calculer la date d'il y a un mois
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        // 2. Supprimer les documents dont la date 'createdAt' est plus petite (inférieure) à un mois
         const result = await IAConversation_model_1.default.deleteMany({
             createdAt: { $lt: oneMonthAgo }
         });
         return res.status(200).json({
             success: true,
-            message: "Nettoyage réussi",
-            deletedCount: result.deletedCount,
+            message: `Nettoyage effectué : ${result.deletedCount} messages supprimés.`,
             thresholdDate: oneMonthAgo
         });
     }
     catch (error) {
-        console.error("Erreur lors du nettoyage des conversations:", error.message);
-        return res.status(500).json({
-            success: false,
-            message: "Erreur lors du nettoyage de la base de données."
-        });
+        console.error("Erreur nettoyage:", error.message);
+        return res.status(500).json({ success: false, message: "Erreur serveur lors du nettoyage." });
     }
 };
 exports.cleanupOldConversations = cleanupOldConversations;

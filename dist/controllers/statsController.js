@@ -1,0 +1,100 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getVendorStats = void 0;
+const mongoose_1 = require("mongoose");
+const Service_model_1 = __importDefault(require("../models/Service.model"));
+const Booking_model_1 = __importDefault(require("../models/Booking.model"));
+/**
+ * Récupère les statistiques détaillées pour le tableau de bord vendeur
+ */
+const getVendorStats = async (req, res) => {
+    try {
+        const vendorId = req.user._id;
+        if (!vendorId) {
+            return res.status(401).json({ message: "Non autorisé" });
+        }
+        const now = new Date();
+        // Définition des intervalles de temps (Mois en cours)
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        // Définition des intervalles de temps (Mois précédent pour la croissance)
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        /* =====================================================
+           1️⃣ CA du mois courant (Somme des totalPrice)
+        ===================================================== */
+        const revenueResult = await Booking_model_1.default.aggregate([
+            {
+                $match: {
+                    vendor: new mongoose_1.Types.ObjectId(vendorId),
+                    status: "completed",
+                    createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$totalPrice" },
+                },
+            },
+        ]);
+        const currentMonthRevenue = revenueResult[0]?.totalRevenue ?? 0;
+        /* =====================================================
+           2️⃣ CA du mois précédent (Pour calculer la croissance)
+        ===================================================== */
+        const lastMonthResult = await Booking_model_1.default.aggregate([
+            {
+                $match: {
+                    vendor: new mongoose_1.Types.ObjectId(vendorId),
+                    status: "completed",
+                    createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$totalPrice" },
+                },
+            },
+        ]);
+        const lastMonthRevenue = lastMonthResult[0]?.totalRevenue ?? 0;
+        /* =====================================================
+           3️⃣ Services en attente d'approbation
+        ===================================================== */
+        const pendingServices = await Service_model_1.default.countDocuments({
+            vendor: new mongoose_1.Types.ObjectId(vendorId),
+            status: "pending",
+        });
+        /* =====================================================
+           4️⃣ Calcul de la croissance en %
+        ===================================================== */
+        let revenueGrowth = 0;
+        if (lastMonthRevenue > 0) {
+            revenueGrowth = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+            revenueGrowth = Math.round(revenueGrowth * 10) / 10; // Arrondi à 1 décimale
+        }
+        else if (currentMonthRevenue > 0) {
+            revenueGrowth = 100; // 100% de croissance si premier CA
+        }
+        /* =====================================================
+           5️⃣ Réservations totales (Toutes périodes)
+        ===================================================== */
+        const totalBookings = await Booking_model_1.default.countDocuments({
+            vendor: new mongoose_1.Types.ObjectId(vendorId)
+        });
+        return res.json({
+            currentMonthRevenue,
+            revenueGrowth,
+            pendingServices,
+            totalBookings
+        });
+    }
+    catch (error) {
+        console.error("❌ Stats error:", error.message);
+        return res.status(500).json({ message: "Erreur lors du calcul des statistiques" });
+    }
+};
+exports.getVendorStats = getVendorStats;

@@ -63,3 +63,5 @@ cron.schedule("0 0 1 * *", async () => {
     console.error("[Auto-Cleanup] Erreur lors du nettoyage :", error);
   }
 });
+
+export default app

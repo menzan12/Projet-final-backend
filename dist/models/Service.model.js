@@ -1,49 +1,81 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importStar(require("mongoose"));
-const ServiceSchema = new mongoose_1.Schema({
-    title: { type: String, required: true, trim: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true, min: 0 },
-    category: { type: String, required: true },
-    vendor: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+const mongoose_1 = require("mongoose");
+// Sous-schéma pour les créneaux (Slots)
+const slotSchema = new mongoose_1.Schema({
+    start: {
+        type: String,
+        required: true
+    },
+    end: {
+        type: String,
+        required: true,
+        validate: {
+            validator: function (value) {
+                // Validation simple : l'heure de fin doit être alphabétiquement (et donc chronologiquement) 
+                // supérieure à l'heure de début (ex: "17:00" > "09:00")
+                return value > this.start;
+            },
+            message: "L'heure de fin ({VALUE}) doit être postérieure à l'heure de début."
+        }
+    }
+}, { _id: false }); // Pas besoin d'ID pour chaque slot individuel
+// Sous-schéma pour les jours (Availability)
+const availabilitySchema = new mongoose_1.Schema({
+    day: {
+        type: String,
+        required: true
+    },
+    active: {
+        type: Boolean,
+        default: false
+    },
+    slots: [slotSchema]
+}, { _id: false });
+const serviceSchema = new mongoose_1.Schema({
+    title: {
+        type: String,
+        required: [true, "Le titre est obligatoire"],
+        trim: true
+    },
+    description: {
+        type: String,
+        required: [true, "La description est obligatoire"]
+    },
+    price: {
+        type: Number,
+        required: [true, "Le prix est obligatoire"],
+        min: [0, "Le prix ne peut pas être négatif"]
+    },
+    category: {
+        type: String,
+        required: [true, "La catégorie est obligatoire"]
+    },
+    city: {
+        type: String,
+        required: [true, "La ville est obligatoire"]
+    },
+    images: [{
+            type: String
+        }], // URLs ImageKit
+    // Utilisation du sous-schéma pour la clarté
+    availability: [availabilitySchema],
+    vendor: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
     status: {
         type: String,
         enum: ["pending", "approved", "rejected"],
-        default: "pending"
-    },
-}, { timestamps: true });
-exports.default = mongoose_1.default.model("Service", ServiceSchema);
+        default: "approved"
+    }
+}, {
+    timestamps: true,
+    // Assure que les virtuels et getters sont inclus lors de la conversion en JSON
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+// Index pour améliorer la vitesse de recherche par vendeur
+serviceSchema.index({ vendor: 1 });
+exports.default = (0, mongoose_1.model)("Service", serviceSchema);

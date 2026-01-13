@@ -33,41 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.admin = exports.protect = void 0;
-const jose = __importStar(require("jose"));
-const joseKey_1 = require("../utils/joseKey");
-const protect = async (req, res, next) => {
-    const token = req.cookies.token;
-    if (!token)
-        return res.status(401).json({ message: "Session expirée" });
-    try {
-        const { payload } = await jose.jwtDecrypt(token, joseKey_1.JoseSecretkey);
-        // Sécurité : On récupère l'ID peu importe s'il s'appelle id ou _id dans le token
-        const userId = payload._id || payload.id;
-        if (!userId) {
-            return res.status(401).json({ message: "Token invalide : ID manquant" });
-        }
-        req.user = {
-            _id: userId.toString(), // On force _id ici
-            role: payload.role
-        };
-        console.log(`[AUTH] Utilisateur : ${userId}`);
-        next();
-    }
-    catch (error) {
-        res.status(401).json({ message: "Jeton invalide" });
-    }
-};
-exports.protect = protect;
-const admin = (req, res, next) => {
-    const user = req.user;
-    if (user && user.role === "admin") {
-        next();
-    }
-    else {
-        res.status(403).json({
-            message: "Accès refusé : droits administrateur requis"
-        });
-    }
-};
-exports.admin = admin;
+const mongoose_1 = __importStar(require("mongoose"));
+const VendorAvailabilitySchema = new mongoose_1.Schema({
+    vendor: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    date: { type: Date, required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+    isBooked: { type: Boolean, default: false }
+}, { timestamps: true });
+exports.default = mongoose_1.default.model("VendorAvailability", VendorAvailabilitySchema);
