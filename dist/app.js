@@ -41,6 +41,9 @@ app.use("/api/messages", message_route_1.default);
 app.use("/api/image", image_route_1.default); // Route pour ImageKit (/api/image/auth)
 app.use("/api/ai", ia_route_1.default);
 app.use("/api/admin", admin_route_1.default);
+app.get("/", (req, res) => {
+    return res.json("Bienvenu sur mon api");
+});
 // Middleware 404 pour les routes non définies
 app.use((req, res) => {
     res.status(404).json({ message: `Route ${req.originalUrl} introuvable.` });
