@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Booking from "../models/Booking.model";
 import Service from "../models/Service.model";
+import { ICreateBooking } from "../middlewares/createBookingMiddleware";
 
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { serviceId, slot, notes } = req.body;
+    const { serviceId, slot, notes } = req.body as ICreateBooking;
     const userId = (req as any).user._id;
 
     if (!slot || !slot.date || !slot.time) {
