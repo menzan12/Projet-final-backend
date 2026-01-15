@@ -13,6 +13,7 @@ import iaRoutes from "./routes/ia.route";
 import adminRoutes from "./routes/admin.route";
 import IAConversationModel from "./models/IAConversation.model";
 import cron from "node-cron";
+import cronRoutes from "./routes/cron.route";
 
 dotenv.config();
 
@@ -43,7 +44,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/image", imageRoute); // Route pour ImageKit (/api/image/auth)
 app.use("/api/ai", iaRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use("/api/cron", cronRoutes);
 app.get("/", (req, res) => {
   return res.json("Bienvenu sur mon api")
 })

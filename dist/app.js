@@ -18,6 +18,7 @@ const ia_route_1 = __importDefault(require("./routes/ia.route"));
 const admin_route_1 = __importDefault(require("./routes/admin.route"));
 const IAConversation_model_1 = __importDefault(require("./models/IAConversation.model"));
 const node_cron_1 = __importDefault(require("node-cron"));
+const cron_route_1 = __importDefault(require("./routes/cron.route"));
 dotenv_1.default.config();
 // Vérification des variables d'environnement critiques
 console.log("Clé Gemini chargée :", !!process.env.GEMINI_API_KEY);
@@ -41,6 +42,7 @@ app.use("/api/messages", message_route_1.default);
 app.use("/api/image", image_route_1.default); // Route pour ImageKit (/api/image/auth)
 app.use("/api/ai", ia_route_1.default);
 app.use("/api/admin", admin_route_1.default);
+app.use("/api/cron", cron_route_1.default);
 app.get("/", (req, res) => {
     return res.json("Bienvenu sur mon api");
 });
