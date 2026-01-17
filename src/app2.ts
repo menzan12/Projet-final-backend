@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser"; 
+import connectDB from "./db/connexion-db";
 import authRoutes from "./routes/auth.route";
 import statsRoutes from "./routes/stats.routes";
 import serviceRoutes from "./routes/service.route";
@@ -10,6 +11,8 @@ import messageRoutes from "./routes/message.route";
 import imageRoute from "./routes/image.route"; 
 import iaRoutes from "./routes/ia.route";
 import adminRoutes from "./routes/admin.route";
+import IAConversationModel from "./models/IAConversation.model";
+import cron from "node-cron";
 import cronRoutes from "./routes/cron.route";
 
 dotenv.config();
@@ -17,6 +20,9 @@ dotenv.config();
 // Vérification des variables d'environnement critiques
 console.log("Clé Gemini chargée :", !!process.env.GEMINI_API_KEY);
 console.log("Clé OpenAI chargée :", !!process.env.OPENAI_API_KEY);
+
+// Connexion à la base de données
+connectDB();
 
 const app = express();
 
@@ -27,7 +33,7 @@ app.use(cors({
 })); 
 
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser()); // Indispensable pour lire le token dans les cookies
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -35,24 +41,32 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/image", imageRoute);
+app.use("/api/image", imageRoute); // Route pour ImageKit (/api/image/auth)
 app.use("/api/ai", iaRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/cron", cronRoutes);
-
 app.get("/", (req, res) => {
-  return res.json({ message: "Bienvenu sur mon API", status: "OK" });
-});
+  return res.json("Bienvenu sur mon api")
+})
 
 // Middleware 404 pour les routes non définies
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} introuvable.` });
 });
 
-// Démarrage du serveur uniquement en développement local
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-  const PORT = process.env.PORT || 5001;
-  app.listen(PORT, () => console.log(`🚀 Serveur lancé sur : http://localhost:${PORT}`));
-}
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`🚀 Serveur lancé sur : http://localhost:${PORT}`));
 
-export default app;
+// Tâche planifiée : Nettoyage mensuel des conversations IA
+cron.schedule("0 0 1 * *", async () => {
+  try {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    await IAConversationModel.deleteMany({ createdAt: { $lt: oneMonthAgo } });
+    console.log("[Auto-Cleanup] Messages de plus d'un mois supprimés.");
+  } catch (error) {
+    console.error("[Auto-Cleanup] Erreur lors du nettoyage :", error);
+  }
+});
+
+export default app
